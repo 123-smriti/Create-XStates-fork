@@ -10,31 +10,48 @@ const Displaystates = () => {
   const [state, setState] = useState("");
   const [city, setCity] = useState("");
 
-  // Fetch all countries
+  
+  const [countryError, setCountryError] = useState("");
+  const [stateError, setStateError] = useState("");
+
+ 
   useEffect(() => {
     fetch("https://location-selector.labs.crio.do/countries")
       .then((res) => res.json())
-      .then((data) => setCountries(data))
-      .catch(() => alert("Error loading countries"));
+      .then((data) => {
+        setCountries(data);
+        setCountryError("");
+      })
+      .catch(() => {
+        setCountryError("Failed to fetch countries");
+        setCountries([]); 
+      });
   }, []);
 
-  // Handle country selection
   const handleCountryChange = async (e) => {
     const selected = e.target.value;
     setCountry(selected);
     setState("");
     setCity("");
     setCities([]);
+    setStates([]);
+    setStateError(""); 
+
     if (!selected) return;
 
-    const res = await fetch(
-      `https://location-selector.labs.crio.do/country=${selected}/states`
-    );
-    const data = await res.json();
-    setStates(data);
+    try {
+      const res = await fetch(
+        `https://location-selector.labs.crio.do/country=${selected}/states`
+      );
+      const data = await res.json();
+      setStates(data);
+      setStateError("");
+    } catch (error) {
+      setStateError("Failed to fetch states"); 
+      setStates([]); 
+    }
   };
 
-  // Handle state selection
   const handleStateChange = async (e) => {
     const selected = e.target.value;
     setState(selected);
@@ -67,6 +84,13 @@ const Displaystates = () => {
           ))}
         </select>
 
+        {/* COUNTRY ERROR MESSAGE */}
+        {countryError && (
+          <p data-testid="country-error" style={{ color: "red" }}>
+            {countryError}
+          </p>
+        )}
+
         {/* STATE */}
         <select
           className="dropdown"
@@ -81,6 +105,13 @@ const Displaystates = () => {
             </option>
           ))}
         </select>
+
+        
+        {stateError && (
+          <p data-testid="state-error" style={{ color: "red" }}>
+            {stateError}
+          </p>
+        )}
 
         {/* CITY */}
         <select
