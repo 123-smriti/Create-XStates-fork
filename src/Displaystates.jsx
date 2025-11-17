@@ -10,32 +10,38 @@ const Displaystates = () => {
   const [state, setState] = useState("");
   const [city, setCity] = useState("");
 
-  
-  const [countryError, setCountryError] = useState("");
-  const [stateError, setStateError] = useState("");
+  const [countryError, setCountryError] = useState(false);
+  const [stateError, setStateError] = useState(false);
+  const [cityError, setCityError] = useState(false);
 
- 
+  
   useEffect(() => {
     fetch("https://location-selector.labs.crio.do/countries")
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) throw new Error();
+        return res.json();
+      })
       .then((data) => {
         setCountries(data);
-        setCountryError("");
+        setCountryError(false);
       })
       .catch(() => {
-        setCountryError("Failed to fetch countries");
-        setCountries([]); 
+        setCountries([]);
+        setCountryError(true);
       });
   }, []);
 
+  
   const handleCountryChange = async (e) => {
     const selected = e.target.value;
     setCountry(selected);
+
+    
     setState("");
+    setStates([]);
     setCity("");
     setCities([]);
-    setStates([]);
-    setStateError(""); 
+    setStateError(false);
 
     if (!selected) return;
 
@@ -43,39 +49,59 @@ const Displaystates = () => {
       const res = await fetch(
         `https://location-selector.labs.crio.do/country=${selected}/states`
       );
+
+      if (!res.ok) {
+        setStates([]);
+        setStateError(true); 
+        return;
+      }
+
       const data = await res.json();
       setStates(data);
-      setStateError("");
-    } catch (error) {
-      setStateError("Failed to fetch states"); 
-      setStates([]); 
+      setStateError(false);
+    } catch {
+      setStates([]);
+      setStateError(true);
     }
   };
 
+  
   const handleStateChange = async (e) => {
     const selected = e.target.value;
     setState(selected);
+
     setCity("");
+    setCities([]);
+    setCityError(false);
 
     if (!selected) return;
 
-    const res = await fetch(
-      `https://location-selector.labs.crio.do/country=${country}/state=${selected}/cities`
-    );
-    const data = await res.json();
-    setCities(data);
+    try {
+      const res = await fetch(
+        `https://location-selector.labs.crio.do/country=${country}/state=${selected}/cities`
+      );
+
+      if (!res.ok) {
+        setCities([]);
+        setCityError(true);
+        return;
+      }
+
+      const data = await res.json();
+      setCities(data);
+      setCityError(false);
+    } catch {
+      setCities([]);
+      setCityError(true);
+    }
   };
 
   return (
     <div className="location">
       <div className="dropdown-container">
-        
+
         {/* COUNTRY */}
-        <select
-          className="dropdown"
-          value={country}
-          onChange={handleCountryChange}
-        >
+        <select className="dropdown" value={country} onChange={handleCountryChange}>
           <option value="">Select Country</option>
           {countries.map((c) => (
             <option key={c} value={c}>
@@ -84,11 +110,8 @@ const Displaystates = () => {
           ))}
         </select>
 
-        {/* COUNTRY ERROR MESSAGE */}
         {countryError && (
-          <p data-testid="country-error" style={{ color: "red" }}>
-            {countryError}
-          </p>
+          <p className="error">Failed to load countries</p>
         )}
 
         {/* STATE */}
@@ -106,11 +129,8 @@ const Displaystates = () => {
           ))}
         </select>
 
-        
         {stateError && (
-          <p data-testid="state-error" style={{ color: "red" }}>
-            {stateError}
-          </p>
+          <p className="error">Failed to load states</p>
         )}
 
         {/* CITY */}
@@ -127,6 +147,10 @@ const Displaystates = () => {
             </option>
           ))}
         </select>
+
+        {cityError && (
+          <p className="error">Failed to load cities</p>
+        )}
       </div>
 
       {country && state && city && (
@@ -139,6 +163,7 @@ const Displaystates = () => {
 };
 
 export default Displaystates;
+
 
 
 
